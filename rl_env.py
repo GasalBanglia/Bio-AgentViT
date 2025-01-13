@@ -4,6 +4,7 @@ import torchvision.transforms as transforms
 import torch
 from torch.nn import functional
 
+import numpy as np
 
 import gym
 
