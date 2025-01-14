@@ -3,10 +3,10 @@ Code repository for the paper "Bio-AgentViT: Bio-Inspired Hybrid ViT with Patch 
 
 ## Usage
 The code is divided into separate modules:
-<li>vit.py              -- Definition of the simpleViT architecture</li>
-<li>rl_env.py           -- Definition of the reinforcement learning environment.</li>
-<li>dqn_agent.py        -- The reinforcement learning patch-selection agent.</li>
-<li>train_test_agent.py -- Code for training and testing the agents.</li>
+**vit.py**              -- Definition of the simpleViT architecture
+**rl_env.py**           -- Definition of the reinforcement learning environment.
+**dqn_agent.py**        -- The reinforcement learning patch-selection agent.
+**train_test_agent.py** -- Code for training and testing the agents.
 
 The notebooks reference the classes and functions defined in the above modules to instantiate, train, and evaluate the networks. They also provide dataset-loading services.
 
