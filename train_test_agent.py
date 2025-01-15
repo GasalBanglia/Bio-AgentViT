@@ -11,7 +11,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_sc
 
 class TrainingTestingAgent():
 
-    def __init__(self, buffer_batch_size, get_reward_every, batch_size, model, att_dim, n_patches, epochs, env, buffer_size, gamma, tau, update_every, lr, eps_end, eps_start, eps_decay, train_loader, validation_loader, device, dqn_input_size, pretrained=False):
+    def __init__(self, buffer_batch_size, get_reward_every, batch_size, model, att_dim, n_patches, epochs, env, buffer_size, gamma, tau, update_target_every, lr, eps_end, eps_start, eps_decay, train_loader, validation_loader, device, dqn_input_size, pretrained=False):
 
       self.env = env
 
@@ -35,7 +35,7 @@ class TrainingTestingAgent():
       self.n_patches = n_patches
 
       # creazione agente
-      self.agent = DQNAgent(buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, self.env, device, dqn_input_size)
+      self.agent = DQNAgent(buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_target_every, lr, self.env, device, dqn_input_size)
 
       self.train_loader = train_loader
       self.validation_loader = validation_loader
@@ -46,11 +46,11 @@ class TrainingTestingAgent():
     def train_test(self, models_save_path, dataset_name):
 
       # lista dei reward ad ogni step
-      step_reward = []
-      selected_patch_list = []
-      epoch = 0
-      iteration = 0
-      eps = self.eps_start
+      step_reward = []            # 
+      selected_patch_list = []    # A record of the agent-selected patches during the current
+      epoch = 0                   # Training epoch (how many times have we run through the dataset?)
+      iteration = 0               # Training iteration (how many dataset batches have we run?)
+      eps = self.eps_start        # starting epsilon.
 
       while epoch < self.epochs:
 

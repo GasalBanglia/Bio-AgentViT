@@ -13,8 +13,8 @@ Transition = namedtuple('Transition',
 # ReplayBuffer
 # Stores the transitions used during QNetwork updates.
 class ReplayBuffer(object):
-    def __init__(self, capacity, batch_size):
-        self.batch_size = batch_size
+    def __init__(self, capacity, buffer_batch_size):
+        self.buffer_batch_size = buffer_batch_size
         self.memory = []
         self.capacity = capacity
 
@@ -25,7 +25,7 @@ class ReplayBuffer(object):
         self.memory.append(Transition(*args))
 
     def sample(self):
-        return random.sample(self.memory, self.batch_size)
+        return random.sample(self.memory, self.buffer_batch_size)
 
     def __len__(self):
         return len(self.memory)
@@ -129,15 +129,15 @@ class QNetworkCNN(nn.Module):
 # uses one of the types of Q-Networks defined above.
 # Includes methods for updates/optimization
 class DQNAgent():
-    def __init__(self, batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, env, device, input_size, pretrained=False):
-        self.batch_size = batch_size
+    def __init__(self, buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_target_every, lr, env, device, input_size, pretrained=False):
+        self.buffer_batch_size = buffer_batch_size
         self.gamma = gamma
 
         # soft update parameter
         self.tau = tau
         # soft_update frequency
         self.step = 0
-        self.update_every = update_every
+        self.update_target_every = update_target_every
 
         # learning rate
         self.lr = lr
@@ -160,7 +160,7 @@ class DQNAgent():
 
         self.optimizer = optim.AdamW(self.q_network.parameters(), lr=lr, amsgrad=True)
         # replay memory
-        self.memory = ReplayBuffer(buffer_size, batch_size)
+        self.memory = ReplayBuffer(buffer_size, buffer_batch_size)
 
 
     def select_action(self, data, eps = 0.):
@@ -179,7 +179,7 @@ class DQNAgent():
 
 
     def optimize_model(self):
-        if len(self.memory) < self.batch_size:
+        if len(self.memory) < self.buffer_batch_size:
             return
         transitions = self.memory.sample()
 
@@ -194,6 +194,7 @@ class DQNAgent():
         with torch.no_grad():
             next_state_values = self.target_network(new_state_batch)
 
+        # next_state_values > 
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch.unsqueeze(1)
 
         criterion = nn.SmoothL1Loss()
@@ -205,7 +206,7 @@ class DQNAgent():
         self.optimizer.step()
 
         self.step += 1
-        if self.step == self.update_every:
+        if self.step == self.update_target_every:
             self.soft_update()
             self.step = 0
 

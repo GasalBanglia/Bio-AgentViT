@@ -22,6 +22,7 @@ def posemb_sincos_2d(patches, temperature = 10000, dtype = torch.float32):
 
 # classes
 
+
 class FeedForward(nn.Module):
     def __init__(self, dim, hidden_dim):
         super().__init__()
