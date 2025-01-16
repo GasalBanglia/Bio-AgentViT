@@ -1,4 +1,3 @@
-
 from collections import namedtuple
 import random
 import torch
@@ -194,8 +193,11 @@ class DQNAgent():
         with torch.no_grad():
             next_state_values = self.target_network(new_state_batch)
 
-        # next_state_values > 
-        expected_state_action_values = (next_state_values * self.gamma) + reward_batch.unsqueeze(1)
+        # Ensure reward_batch is broadcasted to match next_state_values dimensions
+        # TODO check this code to make sure that it is still correct for future models and use cases.
+        reward_batch = reward_batch.unsqueeze(1).expand_as(next_state_values)
+
+        expected_state_action_values = (next_state_values * self.gamma) + reward_batch
 
         criterion = nn.SmoothL1Loss()
         loss = criterion(state_action_values, expected_state_action_values)

@@ -166,13 +166,13 @@ class ViTEnv(gym.Env):
 
     # def get_state(self, data):
     #    with torch.no_grad():
-    #      return data
+    #      return self.ViTnet.get_att(data)
 
     def get_state(self, data):
          # Define a transformation to resize the image
-         transform = transforms.Resize((32, 32))
+        transform = transforms.Resize((32, 32))
          # Apply the transformation to the input data
-         image = transform(data)
+        image = transform(data)
          # Don't change view for CNN input.
         #  image = image.view(image.size(0), -1) # TODO Let's toggle this on and off...16 is so small, probably too smal for details.
-         return image
+        return image
