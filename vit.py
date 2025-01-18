@@ -22,7 +22,6 @@ def posemb_sincos_2d(patches, temperature = 10000, dtype = torch.float32):
 
 # classes
 
-
 class FeedForward(nn.Module):
     def __init__(self, dim, hidden_dim):
         super().__init__()
@@ -131,6 +130,59 @@ class SimpleAgentViT(nn.Module):
 
     def get_patches(self):
         return self.patches
+
+    def get_att(self, img):
+        *_, h, w, dtype = *img.shape, img.dtype
+
+        x = self.to_patch_embedding(img)
+        pe = posemb_sincos_2d(x)
+        x = rearrange(x, 'b ... d -> b (...) d') + pe
+
+        attn, ff = self.transformer.layers[0]
+        x = attn(x)
+        x = torch.mean(x, dim=2)
+        return x
+    
+class SimpleViT(nn.Module):
+    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, channels = 3, dim_head = 64):
+        super().__init__()
+
+        image_height, image_width = pair(image_size)
+        patch_height, patch_width = pair(patch_size)
+
+        assert image_height % patch_height == 0 and image_width % patch_width == 0, 'Image dimensions must be divisible by the patch size.'
+
+        num_patches = (image_height // patch_height) * (image_width // patch_width)
+        patch_dim = channels * patch_height * patch_width
+
+        self.to_patch_embedding = nn.Sequential(
+            Rearrange('b c (h p1) (w p2) -> b h w (p1 p2 c)', p1 = patch_height, p2 = patch_width),
+            nn.LayerNorm(patch_dim),
+            nn.Linear(patch_dim, dim),
+            nn.LayerNorm(dim),
+        )
+
+        self.transformer = Transformer(dim, depth, heads, dim_head, mlp_dim)
+
+        self.to_latent = nn.Identity()
+        self.linear_head = nn.Sequential(
+            nn.LayerNorm(dim),
+            nn.Linear(dim, num_classes)
+        )
+
+    def forward(self, img):
+        *_, h, w, dtype = *img.shape, img.dtype
+
+        x = self.to_patch_embedding(img)
+        pe = posemb_sincos_2d(x)
+        x = rearrange(x, 'b ... d -> b (...) d') + pe
+
+        x = self.transformer(x)
+
+        x = x.mean(dim = 1)
+
+        x = self.to_latent(x)
+        return self.linear_head(x)
 
     def get_att(self, img):
         *_, h, w, dtype = *img.shape, img.dtype

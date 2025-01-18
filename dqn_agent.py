@@ -9,8 +9,7 @@ import torch.optim as optim
 Transition = namedtuple('Transition',
                         ('state', 'new_state', 'reward'))
 
-# ReplayBuffer
-# Stores the transitions used during QNetwork updates.
+
 class ReplayBuffer(object):
     def __init__(self, capacity, buffer_batch_size):
         self.buffer_batch_size = buffer_batch_size
@@ -28,6 +27,7 @@ class ReplayBuffer(object):
 
     def __len__(self):
         return len(self.memory)
+
 
 '''
 class QNetwork(nn.Module):
@@ -63,9 +63,6 @@ class QNetwork(nn.Module):
         x = self.fc_layers(input)
         return x
 
-# ConvNet class.
-# Defines the CNN used by the DQNAgent.
-# Network was built for CIFAR10, expected input size 32x32 pixels.
 class ConvNet(nn.Module):
     def __init__(self, num_patches):
         super(ConvNet, self).__init__()
@@ -89,46 +86,46 @@ class ConvNet(nn.Module):
         # the -1 in the following in the number of samples in our batch
         x = x.view(-1, 16*5*5)
         x = nn.functional.relu(self.fc1(x))
-        x =nn.functional.relu(self.fc2(x))
-        x = self.fc3(x) # notice that the last layer doesn't need a softmax activation since that's already included in nn.CrossEntropyLoss()
-        # x = self.out(x)
+        x = nn.functional.relu(self.fc2(x))
+        # x = self.fc3(x) # notice that the last layer doesn't need a softmax activation since that's already included in nn.CrossEntropyLoss()
+        x = self.out(x)
         return x        
 
-# QNetworkCNN class
-# QNetwork that utilizes the CNN-based ConvNet class.
-# Options for using pretrained weights (currently only one set, pretrained on CIFAR10.)
-# TODO create new pretrained sets, more configurability.
 class QNetworkCNN(nn.Module):
-    def __init__(self, input_size, n_patches, pretrained=False):  # Add input_size
+    def __init__(self, input_size, n_patches, pretrained=False, freeze_layers=True):  # Add input_size
         super(QNetworkCNN, self).__init__()
         self.network = ConvNet(n_patches)
+        print("ConvNet created! Value of pretrained:", pretrained)
         if pretrained:
-            self.network.load_state_dict("./models/CNN_CIFAR10_parameters.pth")
-        self.CNN = nn.Sequential(*list(self.network.children())[:3])
-        self.linear = nn.Sequential(*list(self.network.children())[3:-2])
-        print(self.CNN)
-        print(self.linear)
-        self.patch_selection_head = nn.Linear(84, n_patches)
+            self.network.load_state_dict(torch.load("./models/CNN_CIFAR10_parameters.pth"), strict=False)
+            print("model weights loaded!")
+        if freeze_layers:  # Added logic for freeze
+            # Freeze all layers except the last one (self.out)
+            for name, param in self.network.named_parameters():
+                if 'out' not in name: # The name parameter allows us to filter layers using their name.
+                    param.requires_grad = False
+            
+
+        # if pretrained:
+        #     self.network.load_state_dict("./models/CNN_CIFAR10_parameters.pth")
+        # self.features = nn.Sequential(*list(self.network.children())[:-2])
+        # print(self.features)
+        # self.patch_selection_head = nn.Linear(84, n_patches)
 
     def forward(self, input):
-        # print("Forward start!: ", input.shape)
         # x = input.view(input.size(0), -1)
         # x = self.fc_layers(input)
-        x = self.CNN(input)
-        x = x.view(-1, 16*5*5)
-        x = self.linear(x)
-
-        # print("self.features success:", x.shape)
+        # x = self.features(input)
         # x = x.view(x.size(0), -1)
-        x = self.patch_selection_head(x)
-        return x
+        # x = self.patch_selection_head(x)
+        return self.network(input)
     
 # DQNAgent class
 # Main class for training and patch selection.
 # uses one of the types of Q-Networks defined above.
 # Includes methods for updates/optimization
 class DQNAgent():
-    def __init__(self, buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_target_every, lr, env, device, input_size, pretrained=False):
+    def __init__(self, buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, env, device, input_size, pretrained=False):
         self.buffer_batch_size = buffer_batch_size
         self.gamma = gamma
 
@@ -136,7 +133,7 @@ class DQNAgent():
         self.tau = tau
         # soft_update frequency
         self.step = 0
-        self.update_target_every = update_target_every
+        self.update_every = update_every
 
         # learning rate
         self.lr = lr
@@ -193,11 +190,7 @@ class DQNAgent():
         with torch.no_grad():
             next_state_values = self.target_network(new_state_batch)
 
-        # Ensure reward_batch is broadcasted to match next_state_values dimensions
-        # TODO check this code to make sure that it is still correct for future models and use cases.
-        reward_batch = reward_batch.unsqueeze(1).expand_as(next_state_values)
-
-        expected_state_action_values = (next_state_values * self.gamma) + reward_batch
+        expected_state_action_values = (next_state_values * self.gamma) + reward_batch.unsqueeze(1)
 
         criterion = nn.SmoothL1Loss()
         loss = criterion(state_action_values, expected_state_action_values)
@@ -208,7 +201,7 @@ class DQNAgent():
         self.optimizer.step()
 
         self.step += 1
-        if self.step == self.update_target_every:
+        if self.step == self.update_every:
             self.soft_update()
             self.step = 0
 

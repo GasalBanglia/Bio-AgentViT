@@ -11,7 +11,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_sc
 
 class TrainingTestingAgent():
 
-    def __init__(self, buffer_batch_size, get_reward_every, batch_size, model, att_dim, n_patches, epochs, env, buffer_size, gamma, tau, update_target_every, lr, eps_end, eps_start, eps_decay, train_loader, validation_loader, device, dqn_input_size, pretrained=False):
+    def __init__(self, buffer_batch_size, get_reward_every, batch_size, model, att_dim, n_patches, epochs, env, buffer_size, gamma, tau, update_every, lr, eps_end, eps_start, eps_decay, train_loader, validation_loader, device, dqn_input_size, pretrained=False):
 
       self.env = env
 
@@ -35,7 +35,7 @@ class TrainingTestingAgent():
       self.n_patches = n_patches
 
       # creazione agente
-      self.agent = DQNAgent(buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_target_every, lr, self.env, device, dqn_input_size)
+      self.agent = DQNAgent(buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, self.env, device, dqn_input_size, pretrained=pretrained)
 
       self.train_loader = train_loader
       self.validation_loader = validation_loader
@@ -235,3 +235,22 @@ def evaluate_agent(agent, data_load, device, vitnet, model, mode = False):
           '{:4.2f}'.format(acc_val) + '%)\n')
 
     return loss_val, acc_val
+
+
+# Training loop for SimpleViT (AI generated)
+def train_simple_vit(model, train_loader, criterion, optimizer, device, num_epochs):
+    model.train()
+    for epoch in range(num_epochs):
+        running_loss = 0.0
+        for inputs, labels in train_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            
+            running_loss += loss.item()
+        
+        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss/len(train_loader)}")
