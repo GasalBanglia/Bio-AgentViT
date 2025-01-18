@@ -114,6 +114,7 @@ class ViTEnv(gym.Env):
         self.current_epoch = 0  # Initialize current epoch
 
         self.n_patch_selected = n_patch_selected
+        self.alpha = 0.2
 
     def step_train(self, action, train_data, train_target):
 
@@ -160,6 +161,11 @@ class ViTEnv(gym.Env):
         print(f'  loss_reward: {loss_reward}')
         print(f'  patches_reward: {patches_reward}')
         # print(f'  time_reward: {time_reward}')
+        # Adjust the alpha values
+        
+        
+        self.loss_weight = self.alpha + ((1 - self.alpha) * (1 - (1 - self.current_epoch / self.total_epochs)))
+        self.time_weight = 1 - self.alpha * (1 - self.current_epoch / self.total_epochs)
         reward = loss_reward * self.loss_weight + patches_reward * self.time_weight
 
         return reward
@@ -170,9 +176,9 @@ class ViTEnv(gym.Env):
 
     def get_state(self, data):
          # Define a transformation to resize the image
-        transform = transforms.Resize((32, 32))
+         transform = transforms.Resize((32, 32))
          # Apply the transformation to the input data
-        image = transform(data)
+         image = transform(data)
          # Don't change view for CNN input.
         #  image = image.view(image.size(0), -1) # TODO Let's toggle this on and off...16 is so small, probably too smal for details.
-        return image
+         return image
