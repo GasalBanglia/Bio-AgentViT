@@ -11,4 +11,6 @@ The code is divided into separate modules:
 The notebooks reference the classes and functions defined in the above modules to instantiate, train, and evaluate the networks. They also provide dataset-loading services.
 
 ## Model Architectures
+
+## Visualization
 ![image](https://github.com/user-attachments/assets/6ae318f7-f4db-416c-ac7a-ecfb685d532d)
