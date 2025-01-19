@@ -254,3 +254,4 @@ def train_simple_vit(model, train_loader, criterion, optimizer, device, num_epoc
             running_loss += loss.item()
         
         print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss/len(train_loader)}")
+

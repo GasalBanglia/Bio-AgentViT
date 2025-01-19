@@ -2,17 +2,27 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
+def get_patch_coordinates(patch_index, patch_size, image_shape):
+    num_patches_per_row = image_shape[2] // patch_size
+    row = patch_index // num_patches_per_row
+    col = patch_index % num_patches_per_row
+    return row * patch_size, col * patch_size
+
 def visualize_selected_patches(image, model_agent, device):
     model_agent.eval()
     with torch.no_grad():
-        patches = model_agent.select_patches(image.to(device))
+        patches = model_agent.select_action(image.to(device))
+        patches = [1 if patch > patches.mean() else 0 for patch in patches]
     
+    patch_size = model_agent.patch_size
     fig, ax = plt.subplots(1)
     ax.imshow(image.permute(1, 2, 0).cpu().numpy())
     
-    for patch in patches:
-        rect = plt.Rectangle((patch[1], patch[0]), patch[3] - patch[1], patch[2] - patch[0], edgecolor='r', facecolor='none')
-        ax.add_patch(rect)
+    for i, patch in enumerate(patches):
+        if patch == 1:
+            y, x = get_patch_coordinates(i, patch_size, image.shape)
+            rect = plt.Rectangle((x, y), patch_size, patch_size, edgecolor='r', facecolor='none')
+            ax.add_patch(rect)
     
     plt.show()
 

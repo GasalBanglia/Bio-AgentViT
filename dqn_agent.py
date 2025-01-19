@@ -3,6 +3,7 @@ import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import numpy as np
 
 
 
@@ -143,6 +144,9 @@ class DQNAgent():
 
         # environment
         self.env = env
+
+        # patch width
+        self.patch_size = np.sqrt(n_patches)
 
         # agent net
         #self.q_network = QNetwork(n_patches).to(self.device)
