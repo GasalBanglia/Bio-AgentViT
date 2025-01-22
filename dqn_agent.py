@@ -49,10 +49,10 @@ class QNetwork(nn.Module):
 # Can take in an input of any size; originally designed to receive attention scores from transformer.
 # Has 'n_patches' outputs: the probabilities of a patch being selected 
 class QNetwork(nn.Module):
-    def __init__(self, input_size, n_patches):  # Add input_size
+    def __init__(self, n_patches):  # Add input_size
         super(QNetwork, self).__init__()
         self.fc_layers = nn.Sequential(
-                 nn.Linear(input_size, 1024),  # Change input size here
+                 nn.Linear(n_patches, 1024),  # Change input size here
                  nn.ReLU(),
                  nn.Linear(1024, 256),
                  nn.ReLU(),
@@ -121,11 +121,12 @@ class QNetworkCNN(nn.Module):
         # x = self.patch_selection_head(x)
         return self.network(input)
     
-# DQNAgent class
+# DQNAgentCNN class
 # Main class for training and patch selection.
-# uses one of the types of Q-Networks defined above.
+# Uses the CNN-based DQN instead of the MLP
+# Accepts the image as input.
 # Includes methods for updates/optimization
-class DQNAgent():
+class OurDQNAgent():
     def __init__(self, buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, env, device, input_size, pretrained=False):
         self.buffer_batch_size = buffer_batch_size
         self.gamma = gamma
@@ -180,6 +181,96 @@ class DQNAgent():
 
     def optimize_model(self):
         if len(self.memory) < self.buffer_batch_size:
+            return
+        transitions = self.memory.sample()
+
+        batch = Transition(*zip(*transitions))
+
+        state_batch = torch.cat(batch.state).to(self.device)
+        new_state_batch = torch.cat(batch.new_state).to(self.device)
+        reward_batch = torch.cat(batch.reward).to(self.device)
+
+        state_action_values = self.q_network(state_batch)
+
+        with torch.no_grad():
+            next_state_values = self.target_network(new_state_batch)
+
+        expected_state_action_values = (next_state_values * self.gamma) + reward_batch.unsqueeze(1)
+
+        criterion = nn.SmoothL1Loss()
+        loss = criterion(state_action_values, expected_state_action_values)
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_value_(self.q_network.parameters(), 100)
+        self.optimizer.step()
+
+        self.step += 1
+        if self.step == self.update_every:
+            self.soft_update()
+            self.step = 0
+
+
+    def soft_update(self):
+        target_network_state_dict = self.target_network.state_dict()
+        q_network_state_dict = self.q_network.state_dict()
+        for key in q_network_state_dict:
+            target_network_state_dict[key] = q_network_state_dict[key]*self.tau + target_network_state_dict[key]*(1-self.tau)
+        self.target_network.load_state_dict(target_network_state_dict)
+
+class DQNAgent():
+    def __init__(self, batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, env, device, pretrained=False):
+
+        self.batch_size = batch_size
+        self.gamma = gamma
+
+        # soft update parameter
+        self.tau = tau
+        # soft_update frequency
+        self.step = 0
+        self.update_every = update_every
+
+        # learning rate
+        self.lr = lr
+
+        # device (CPU o GPU)
+        self.device = device
+
+        # environment
+        self.env = env
+
+        # agent net
+        self.q_network = QNetwork(n_patches).to(self.device)
+        # target net
+        self.target_network = QNetwork(n_patches).to(self.device)
+
+        # input_size = 16 * 16 * 3
+        # self.q_network = QNetwork(input_size, n_patches).to(self.device)
+        # self.target_network = QNetwork(input_size, n_patches).to(self.device)
+        self.target_network.load_state_dict(self.q_network.state_dict())
+
+        self.optimizer = optim.AdamW(self.q_network.parameters(), lr=lr, amsgrad=True)
+        # replay memory
+        self.memory = ReplayBuffer(buffer_size, batch_size)
+
+
+    def select_action(self, data, eps = 0.):
+
+        sample = random.random()
+
+        if sample > eps:
+            with torch.no_grad():
+                selected_batch = self.q_network(data)
+                selected = torch.mean(selected_batch, dim=0)
+                return selected
+        else:
+            selected = self.env.action_space.sample()
+            return selected
+
+
+
+    def optimize_model(self):
+        if len(self.memory) < self.batch_size:
             return
         transitions = self.memory.sample()
 
