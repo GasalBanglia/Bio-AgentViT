@@ -8,7 +8,7 @@ def get_patch_coordinates(patch_index, patch_size, num_patches_per_row):
     col = patch_index % num_patches_per_row
     return row * patch_size , col * patch_size
 
-def visualize_selected_patches(image, input_img, model_agent, device):
+def visualize_selected_patches(image, input_img, model_agent, device, title=None):
     # model_agent.eval()
     with torch.no_grad():
         patches = model_agent.select_action(input_img.to(device))
@@ -26,6 +26,34 @@ def visualize_selected_patches(image, input_img, model_agent, device):
             rect = plt.Rectangle((x-1, y-1), patch_size, patch_size, edgecolor='none', facecolor='gray', alpha=0.9)
             # rect = plt.Rectangle((x, y), patch_size, patch_size, edgecolor='r', facecolor='none')
             ax.add_patch(rect)
+    
+    plt.title(title)
+    plt.show()
+
+def visualize_selected_patches_multiple_images(images, input_imgs, model_agent, device, titles=None):
+    num_images = len(images)
+    fig, axes = plt.subplots(1, num_images, figsize=(num_images * 5, 5))
+    
+    for i, (image, input_img) in enumerate(zip(images, input_imgs)):
+        title = titles[i] if titles is not None else None
+        # model_agent.eval()
+        with torch.no_grad():
+            patches = model_agent.select_action(input_img.to(device))
+            patches = [1 if patch > patches.mean() else 0 for patch in patches]
+        
+        patch_size = model_agent.patch_size
+        ax = axes[i] if num_images > 1 else axes
+        ax.imshow(image.permute(1, 2, 0).cpu().numpy())
+    
+        # ax.imshow(image.cpu().numpy())
+        num_patches_per_row = int(image.size(1) // patch_size)
+        for j, patch in enumerate(patches):
+            if patch == 0:
+                y, x = get_patch_coordinates(j, patch_size, num_patches_per_row)
+                rect = plt.Rectangle((x-1, y-1), patch_size, patch_size, edgecolor='none', facecolor='gray', alpha=0.9)
+                # rect = plt.Rectangle((x, y), patch_size, patch_size, edgecolor='r', facecolor='none')
+                ax.add_patch(rect)
+        ax.set_title(title)
     
     plt.show()
 

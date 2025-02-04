@@ -236,6 +236,9 @@ class DQNAgent():
         # device (CPU o GPU)
         self.device = device
 
+        # patch width
+        self.patch_size = np.sqrt(n_patches)
+
         # environment
         self.env = env
 
