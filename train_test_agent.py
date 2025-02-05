@@ -130,8 +130,9 @@ class OurTrainingTestingAgent():
             print("#"*40)
         
           if epoch % self.save_every == 0:
-            vitnet_path = f"{models_save_path}/ourViTNet_epoch_{epoch}_{dataset_name}.pth"
-            agentQNetwork_path = f"{models_save_path}/ourAgent_qnetwork_epoch_{epoch}_{dataset_name}.pth"
+            timestamp = time.strftime("%m%d%H%M")
+            vitnet_path = f"{models_save_path}/ourViTNet_epoch_{epoch}_{dataset_name}_{timestamp}.pth"
+            agentQNetwork_path = f"{models_save_path}/ourAgent_qnetwork_epoch_{epoch}_{dataset_name}_{timestamp}.pth"
             torch.save(self.ViTnet.state_dict(), vitnet_path)
             torch.save(self.agent.q_network.state_dict(), agentQNetwork_path)
             if self.verbose:
@@ -328,8 +329,9 @@ class TrainingTestingAgent():
             print("#"*40)
 
           if epoch % self.save_every == 0:
-            vitnet_path = f"{models_save_path}/theirViTNet_epoch_{epoch}_{dataset_name}.pth"
-            agent_path = f"{models_save_path}/theirAgentQNetwork_epoch_{epoch}_{dataset_name}.pth"
+            timestamp = time.strftime("%m%d%H%M")
+            vitnet_path = f"{models_save_path}/theirViTNet_epoch_{epoch}_{dataset_name}_{timestamp}.pth"
+            agent_path = f"{models_save_path}/theirAgent_qnetwork_epoch_{epoch}_{dataset_name}_{timestamp}.pth"
             torch.save(self.ViTnet.state_dict(), vitnet_path)
             torch.save(self.agent.q_network.state_dict(), agent_path)
             if self.verbose:
@@ -474,7 +476,8 @@ class SimpleViTTrainingTestingAgent():
         print("#" * 40)
 
       if epoch % self.save_every == 0:
-        vitnet_path = f"{models_save_path}/simpleViTNet_epoch_{epoch}_{dataset_name}.pth"
+        timestamp = time.strftime("%m%d%H%M")
+        vitnet_path = f"{models_save_path}/simpleViTNet_epoch_{epoch}_{dataset_name}_{timestamp}.pth"
         torch.save(self.ViTnet.state_dict(), vitnet_path)
         if self.verbose:
           print(f"Saved SimpleViTNet model to {vitnet_path}")
