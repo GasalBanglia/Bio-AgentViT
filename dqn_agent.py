@@ -28,6 +28,37 @@ class ReplayBuffer(object):
 
     def __len__(self):
         return len(self.memory)
+    
+# Prioritized Experience Replay Buffer
+class ReplayBufferPER(object):
+    def __init__(self, capacity, buffer_batch_size, alpha, epsilon=1e-3):
+        self.buffer_batch_size = buffer_batch_size
+        self.memory = []
+        self.capacity = capacity
+        self.priorities = np.ndarray(capacity)
+        alpha = alpha
+        epsilon = epsilon
+
+    def push(self, *args, td_error):
+        if len(self.memory) >= self.capacity:
+            index_to_remove = random.randint(0, len(self.memory) - 1)
+            self.memory.pop(index_to_remove)
+            self.priorities.pop(index_to_remove)
+        self.memory.append(Transition(*args))
+        # Use the simple td_error + epsilon as the priority
+        # TODO try using the rank-based priority
+        priority = abs(td_error) + self.epsilon
+        self.priorities.append(priority)
+
+    def sample(self):
+        # Sample the batch based on the priority
+        # Calculate the probability of each sample
+        
+
+        return random.sample(self.memory, self.buffer_batch_size)
+
+    def __len__(self):
+        return len(self.memory)
 
 
 '''
