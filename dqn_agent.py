@@ -158,7 +158,7 @@ class QNetworkCNN(nn.Module):
 # Accepts the image as input.
 # Includes methods for updates/optimization
 class OurDQNAgent():
-    def __init__(self, buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, env, device, input_size, pretrained=False):
+    def __init__(self, buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, env, device, input_size, patch_size, pretrained=False):
         self.buffer_batch_size = buffer_batch_size
         self.gamma = gamma
 
@@ -178,7 +178,7 @@ class OurDQNAgent():
         self.env = env
 
         # patch width
-        self.patch_size = np.sqrt(n_patches)
+        self.patch_size = patch_size
 
         # agent net
         #self.q_network = QNetwork(n_patches).to(self.device)
@@ -250,7 +250,7 @@ class OurDQNAgent():
         self.target_network.load_state_dict(target_network_state_dict)
 
 class DQNAgent():
-    def __init__(self, batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, env, device, pretrained=False):
+    def __init__(self, batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, env, patch_size, device, pretrained=False):
 
         self.batch_size = batch_size
         self.gamma = gamma
@@ -268,7 +268,7 @@ class DQNAgent():
         self.device = device
 
         # patch width
-        self.patch_size = np.sqrt(n_patches)
+        self.patch_size = patch_size
 
         # environment
         self.env = env

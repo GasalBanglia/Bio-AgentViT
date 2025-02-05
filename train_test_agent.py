@@ -13,7 +13,7 @@ class OurTrainingTestingAgent():
 
     def __init__(self, buffer_batch_size, get_reward_every, batch_size, model, 
                  att_dim, n_patches, epochs, env, buffer_size, gamma, tau, update_every, lr, eps_end, 
-                 eps_start, eps_decay, train_loader, validation_loader, device, dqn_input_size, 
+                 eps_start, eps_decay, train_loader, validation_loader, device, dqn_input_size, patch_size,
                  save_every = 10, verbose = False, pretrained=False):
 
       self.env = env
@@ -38,7 +38,7 @@ class OurTrainingTestingAgent():
       self.n_patches = n_patches
 
       # creazione agente
-      self.agent = OurDQNAgent(buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, self.env, device, dqn_input_size, pretrained=pretrained)
+      self.agent = OurDQNAgent(buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, self.env, device, dqn_input_size, patch_size, pretrained=pretrained)
 
       self.train_loader = train_loader
       self.validation_loader = validation_loader
@@ -218,7 +218,7 @@ class TrainingTestingAgent():
 
     def __init__(self, buffer_batch_size, get_reward_every, batch_size, model, att_dim, n_patches, 
                  epochs, env, buffer_size, gamma, tau, update_every, lr, eps_end, eps_start, eps_decay, 
-                 train_loader, validation_loader, device,
+                 train_loader, validation_loader, device, patch_size,
                  save_every = 20, verbose = False):
 
       self.env = env
@@ -243,7 +243,7 @@ class TrainingTestingAgent():
       self.n_patches = n_patches
 
       # creazione agente
-      self.agent = DQNAgent(buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, self.env, device)
+      self.agent = DQNAgent(buffer_batch_size, att_dim, n_patches, buffer_size, gamma, tau, update_every, lr, self.env, patch_size, device)
 
       self.train_loader = train_loader
       self.validation_loader = validation_loader
