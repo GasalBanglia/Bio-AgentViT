@@ -543,3 +543,143 @@ class SimpleViTTrainingTestingAgent():
       'validation_f1': self.validation_f1,
       'epoch_time': self.epoch_time_list
     }
+  
+
+# RandomTrainingTestingAgent
+# This agent trains a simpleViT, but by feeding it randomly selected patches each time.
+class SimpleRandomTrainingTestingAgent():
+  def __init__(self, batch_size, model, n_patches, epochs, train_loader, validation_loader, optimizer, device, 
+         save_every=20, verbose=False):
+    self.epochs = epochs
+    self.batch_size = batch_size
+    self.ViTnet = model
+    self.n_patches = n_patches
+    self.train_loader = train_loader
+    self.validation_loader = validation_loader
+    self.optimizer = optimizer
+    self.device = device
+    self.save_every = save_every
+    self.verbose = verbose
+    
+
+    self.validation_acc = []
+    self.validation_loss = []
+    self.epoch_time_list = []
+    self.validation_precision = []
+    self.validation_recall = []
+    self.validation_f1 = []
+
+  def train_test(self, models_save_path, dataset_name):
+    epoch = 0
+
+    while epoch < self.epochs:
+      epoch += 1
+      print(f'Epoch: {epoch}/{self.epochs}')
+
+      start_time = time.time()
+      samples = len(self.train_loader.dataset)
+
+      self.ViTnet.train()
+      for i, (data, target) in enumerate(self.train_loader):
+        data = data.to(self.device)
+        target = target.to(self.device)
+
+        patches = torch.randint(0, 2, (self.n_patches,), dtype=torch.float).to(self.device)
+        self.ViTnet.set_patches(patches)
+
+        self.optimizer.zero_grad()
+        output = self.ViTnet(data)
+        loss = functional.nll_loss(functional.log_softmax(output, dim=1), target)
+        loss.backward()
+        self.optimizer.step()
+
+      if self.verbose:
+        print(f'\nInizio Testing')
+      loss, acc, precision, recall, f1 = self.evaluate_epoch(self.validation_loader, models_save_path, dataset_name, self.device)
+
+      epoch_time = time.time() - start_time
+
+      self.validation_acc.append(acc)
+      self.validation_loss.append(loss)
+      self.validation_precision.append(precision)
+      self.validation_recall.append(recall)
+      self.validation_f1.append(f1)
+      self.epoch_time_list.append(epoch_time)
+      if self.verbose:
+        print(f'Epoch time: {epoch_time}')
+        print("#" * 40)
+        print('Episode End')
+        print("#" * 40)
+
+      if epoch % self.save_every == 0:
+        timestamp = time.strftime("%m%d%H%M")
+        vitnet_path = f"{models_save_path}/randomViTNet_epoch_{epoch}_{dataset_name}_{timestamp}.pth"
+        torch.save(self.ViTnet.state_dict(), vitnet_path)
+        if self.verbose:
+          print(f"Saved RandomViTNet model to {vitnet_path}")
+
+    return self.validation_loss, self.validation_acc
+
+  def evaluate_epoch(self, data_load, models_save_path, dataset_name, device):
+    self.ViTnet.eval()
+
+    elements = 0
+    csamp = 0
+    tloss = 0
+    all_predictions = []
+    all_targets = []
+
+    with torch.no_grad():
+      for data, target in data_load:
+        elements += len(data)
+        data = data.to(device)
+        target = target.to(device)
+
+        patches = torch.randint(0, 2, (self.ViTnet.n_patches,), dtype=torch.float).to(self.device)
+        self.ViTnet.set_patches(patches)
+
+        predictions = self.ViTnet(data)
+
+        output = functional.log_softmax(predictions, dim=1)
+        loss = functional.nll_loss(output, target, reduction='sum')
+        _, pred = torch.max(output, dim=1)
+
+        predictions = torch.argmax(predictions, dim=1).cpu().numpy()
+
+        tloss += loss.item()
+        csamp += pred.eq(target).sum()
+
+        all_predictions.extend(predictions)
+        all_targets.extend(target.cpu())
+
+    loss_val = tloss / elements
+    acc_val = (100.0 * csamp / elements).cpu()
+
+    if self.verbose:
+      print('\n\nAverage test loss: ' + '{:.4f}'.format(loss_val) +
+          '  Accuracy:' + '{:5}'.format(csamp) + '/' +
+          '{:5}'.format(elements) + ' (' +
+          '{:4.2f}'.format(acc_val) + '%)\n')
+
+    precision = precision_score(all_targets, all_predictions, average='weighted')
+    recall = recall_score(all_targets, all_predictions, average='weighted')
+    f1 = f1_score(all_targets, all_predictions, average='weighted')
+
+    return loss_val, acc_val, precision, recall, f1
+
+  def train_info(self):
+    return {
+      'train_loss': self.validation_loss,
+      'train_time': self.epoch_time_list,
+    }
+
+  def validation_info(self):
+    return {
+      'validation_loss': self.validation_loss,
+      'validation_acc': [tensor.item() for tensor in self.validation_acc],
+      'validation_precision': self.validation_precision,
+      'validation_recall': self.validation_recall,
+      'validation_f1': self.validation_f1,
+      'epoch_time': self.epoch_time_list
+    }
+   
